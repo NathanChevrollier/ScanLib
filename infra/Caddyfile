@@ -1,0 +1,39 @@
+# Front statique et API sur la meme origine : les cookies de session restent
+# en premiere partie, sans CORS ni configuration de domaine croise.
+#
+# DOMAIN vaut « :80 » en local et « scanlib.mondomaine.fr » en production,
+# auquel cas Caddy obtient et renouvelle seul le certificat Let's Encrypt.
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+
+		# Les fichiers versionnes par le build sont immuables ; index.html et le
+		# service worker doivent rester frais pour que les mises a jour arrivent.
+		@immutable path /assets/*
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+		@volatile path /index.html /sw.js /manifest.webmanifest /registerSW.js
+		header @volatile Cache-Control "no-cache"
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		# Les jaquettes viennent des CDN des sources de donnees.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: https://uploads.mangadex.org https://image.tmdb.org https://cdn.myanimelist.net https://media.kitsu.io https://media.kitsu.app https://s4.anilist.co https://static.tvmaze.com; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

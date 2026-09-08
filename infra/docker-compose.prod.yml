@@ -1,0 +1,89 @@
+name: scanlib
+
+# Version pour VPS avec Nginx externe
+# Nginx sur l'hôte (port 80/443) fait reverse-proxy vers:
+# - http://localhost:3000 pour le front
+# - http://localhost:3001 pour l'API
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scanlib}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe PostgreSQL manquant}
+      POSTGRES_DB: ${POSTGRES_DB:-scanlib}
+      LANG: fr_FR.utf8
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-scanlib} -d ${POSTGRES_DB:-scanlib}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [scanlib]
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-scanlib}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-scanlib}
+      # Le front accède l'API via Nginx externe (même domaine)
+      CORS_ORIGIN: ${PUBLIC_URL:-http://localhost}
+      JWT_SECRET: ${JWT_SECRET:?secret JWT manquant}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-30d}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      ALLOW_OPEN_REGISTRATION: ${ALLOW_OPEN_REGISTRATION:-false}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      DEFAULT_WATCH_REGIONS: ${DEFAULT_WATCH_REGIONS:-FR,US}
+      DEFAULT_LANGUAGES: ${DEFAULT_LANGUAGES:-fr,en}
+      ENABLE_ANILIST: ${ENABLE_ANILIST:-true}
+      PROVIDER_USER_AGENT: ${PROVIDER_USER_AGENT:-ScanLib/0.1 (self-hosted)}
+      ENABLE_JOBS: ${ENABLE_JOBS:-true}
+      TIMEZONE: ${TIMEZONE:-Europe/Paris}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@localhost}
+    command: sh -c "node dist/db/migrate.js && node dist/index.js"
+    ports:
+      - 127.0.0.1:3001:3001  # Nginx (localhost uniquement)
+    networks: [scanlib]
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: 'no'
+    volumes:
+      - web-dist:/srv/web
+    networks: [scanlib]
+
+  # Petit serveur HTTP pour servir les fichiers statiques du front
+  web-server:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_completed_successfully
+    ports:
+      - 127.0.0.1:3000:80
+    volumes:
+      - web-dist:/usr/share/nginx/html:ro
+      - ./nginx-web.conf:/etc/nginx/nginx.conf:ro
+    networks: [scanlib]
+
+volumes:
+  web-dist:
+
+networks:
+  scanlib:
+    driver: bridge

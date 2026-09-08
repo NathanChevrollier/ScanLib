@@ -1,0 +1,83 @@
+name: Vérification
+
+# Sur un projet à un seul développeur, c'est le premier filet : rien ne part sur
+# le VPS sans que les types, l'analyse statique, les tests et les deux builds
+# soient passés.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: scanlib
+          POSTGRES_PASSWORD: scanlib
+          POSTGRES_DB: scanlib_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U scanlib"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://scanlib:scanlib@localhost:5432/scanlib_test
+      JWT_SECRET: secret-de-test-suffisamment-long-pour-passer
+      NODE_ENV: test
+      # Les tests ne doivent jamais appeler les API publiques : elles sont
+      # limitées en débit et tomberaient en panne au mauvais moment.
+      ENABLE_JOBS: 'false'
+      ENABLE_ANILIST: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Appliquer les migrations
+        run: npm run db:migrate
+
+      - name: Vérifier les types
+        run: npm run typecheck
+
+      - name: Analyse statique
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Construire
+        run: npm run build
+
+  # La vérification des liens sort à l'extérieur : elle dépend de sites tiers et
+  # ne doit pas faire échouer une modification de code sans rapport.
+  # (la tâche planifiée « verify-platforms » fait le même contrôle chaque semaine
+  # depuis l'instance en production)
+  liens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Vérifier les liens des plateformes
+        run: npm run links:verify

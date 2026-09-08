@@ -1,0 +1,40 @@
+{
+    "name": "scanlib",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "workspaces": [
+        "packages/*",
+        "apps/*"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+        "dev:api": "npm run dev --workspace=@scanlib/api",
+        "dev:web": "npm run dev --workspace=@scanlib/web",
+        "build": "npm run build --workspace=@scanlib/api && npm run build --workspace=@scanlib/web",
+        "typecheck": "tsc --noEmit -p packages/shared && tsc --noEmit -p packages/providers && tsc --noEmit -p apps/api && tsc --noEmit -p apps/web",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "db:generate": "npm run db:generate --workspace=@scanlib/api",
+        "db:migrate": "npm run db:migrate --workspace=@scanlib/api",
+        "db:studio": "npm run db:studio --workspace=@scanlib/api",
+        "user:create": "npm run user:create --workspace=@scanlib/api --",
+        "job:run": "npm run job:run --workspace=@scanlib/api --",
+        "links:verify": "tsx scripts/verify-links.ts"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.5",
+        "@types/node": "^22.10.0",
+        "concurrently": "^9.1.0",
+        "eslint": "^9.17.0",
+        "prettier": "^3.4.0",
+        "typescript": "^5.7.0",
+        "typescript-eslint": "^8.18.0",
+        "vitest": "^3.2.7"
+    }
+}

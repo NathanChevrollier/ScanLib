@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+/*
+ * Thème sombre par défaut : l'application se consulte souvent le soir et les
+ * jaquettes ressortent mieux sur fond profond. Le thème clair reste disponible
+ * via la classe `light` posée sur <html> par le sélecteur de thème.
+ */
+@theme {
+  --color-ink-950: #07080c;
+  --color-ink-900: #0b0d12;
+  --color-ink-850: #10131a;
+  --color-ink-800: #161a23;
+  --color-ink-700: #1f2430;
+  --color-ink-600: #2c3342;
+  --color-ink-400: #6b7488;
+  --color-ink-300: #949cb0;
+  --color-ink-100: #e6e9f0;
+
+  --color-accent: #6366f1;
+  --color-accent-soft: #818cf8;
+  --color-manga: #f472b6;
+  --color-anime: #22d3ee;
+  --color-tv: #a78bfa;
+  --color-movie: #fbbf24;
+
+  /*
+   * Couleurs de graphiques, distinctes des accents d'interface : elles sont
+   * validées pour la bande de luminosité, l'écart perceptif en vision des
+   * couleurs déficiente et le contraste sur les deux fonds (scripts dataviz).
+   */
+  --color-chart-manga: #db2777;
+  --color-chart-anime: #0891b2;
+  --color-chart-tv: #7c3aed;
+  --color-chart-movie: #d97706;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+:root {
+  color-scheme: dark;
+  --surface: var(--color-ink-900);
+  --surface-raised: var(--color-ink-850);
+  --surface-hover: var(--color-ink-800);
+  --border: var(--color-ink-700);
+  --text: var(--color-ink-100);
+  --text-muted: var(--color-ink-300);
+
+  /* Rampe séquentielle de la heatmap, du plus faible au plus fort. */
+  --heat-1: #3f4dae;
+  --heat-2: #5a6ade;
+  --heat-3: #8290f0;
+  --heat-4: #adb8ff;
+  --heat-empty: var(--color-ink-800);
+}
+
+html.light {
+  color-scheme: light;
+  --surface: #f6f7fa;
+  --surface-raised: #ffffff;
+  --surface-hover: #eef0f6;
+  --border: #dfe3ec;
+  --text: #14171f;
+  --text-muted: #5b6373;
+
+  --heat-1: #a7b0f2;
+  --heat-2: #7a88e8;
+  --heat-3: #5462d6;
+  --heat-4: #343fa0;
+  --heat-empty: #e8eaf2;
+}
+
+/*
+ * Échelle de l'interface. Tailwind exprime tailles de police, marges et rayons
+ * en `rem` : régler la taille de base du document agrandit l'ensemble d'un
+ * bloc, sans toucher à une seule classe.
+ */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1600px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Encoches et barres système sur mobile. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  overscroll-behavior-y: none;
+}
+
+/* Barres de défilement discrètes, cohérentes avec le fond. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@utility surface {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+@utility muted {
+  color: var(--text-muted);
+}
+
+/* Masque la barre de défilement des rangées horizontales sur mobile. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

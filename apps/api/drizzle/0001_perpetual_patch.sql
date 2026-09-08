@@ -1,0 +1,1 @@
+ALTER TABLE "library_entries" ADD COLUMN "primary_links" jsonb DEFAULT '{}'::jsonb NOT NULL;
