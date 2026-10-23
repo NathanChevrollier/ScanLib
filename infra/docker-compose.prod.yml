@@ -1,9 +1,12 @@
-name: scanlib
+# Projet « infra » : c'est le nom de la pile déjà en production sur le VPS.
+# Déploiement : cd infra && docker compose --compatibility --env-file ../.env -f docker-compose.prod.yml up -d --build
+name: infra
 
 # Version pour VPS avec Nginx externe
 # Nginx sur l'hôte (port 80/443) fait reverse-proxy vers:
-# - http://localhost:3000 pour le front
-# - http://localhost:3001 pour l'API
+# - http://localhost:5000 pour le front
+# - http://localhost:5001 pour l'API
+# (3000/3001 sont pris par d'autres services du VPS)
 
 services:
   postgres:
@@ -55,7 +58,7 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@localhost}
     command: sh -c "node dist/db/migrate.js && node dist/index.js"
     ports:
-      - 127.0.0.1:3001:3001  # Nginx (localhost uniquement)
+      - 127.0.0.1:5001:3001  # Nginx (localhost uniquement)
     networks: [scanlib]
 
   web:
@@ -75,7 +78,7 @@ services:
       web:
         condition: service_completed_successfully
     ports:
-      - 127.0.0.1:3000:80
+      - 127.0.0.1:5000:80
     volumes:
       - web-dist:/usr/share/nginx/html:ro
       - ./nginx-web.conf:/etc/nginx/nginx.conf:ro
