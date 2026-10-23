@@ -61,7 +61,7 @@ async function worksDueForRefresh(
     .join(' ');
 
   const rows = await db.execute<{ id: string; kind: string }>(sql`
-    select distinct w.id, w.kind
+    select distinct w.id, w.kind, w.${sql.raw(column)}
     from works w
     join library_entries e on e.work_id = w.id and e.status <> 'dropped'
     where w.${sql.raw(column)} is null
